@@ -20,11 +20,6 @@ template frees(s) =
     else:
       dealloc(s.p)
 
-proc resize(old: int): int {.inline.} =
-  if old <= 0: result = 4
-  elif old < 65536: result = old * 2
-  else: result = old * 3 div 2 # for large arrays * 3/2 is better
-
 const
   strMinCap = max(2, sizeof(String) - 1) - 1
 
@@ -55,6 +50,15 @@ proc `=copy`*(a: var String, b: String) =
   else:
     short(a) = b.short
 
+proc resize(old: int): int {.inline.} =
+  if old <= 0: result = 4
+  elif old < 65536: result = old * 2
+  else: result = old * 3 div 2 # for large arrays * 3/2 is better
+
+#proc prepareAdd(s: var String; addLen: int) =
+  #let newLen = s.len + addLen
+
+
 proc len*(s: String): int {.inline.} =
   if s.isLong: s.len else: s.short.len
 
@@ -65,4 +69,5 @@ proc toCStr*(s: String): cstring {.inline.} =
 var
   s: String
 
-echo s.len
+s.cap = strLongFlag
+echo s.short.data
