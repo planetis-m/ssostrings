@@ -2,7 +2,13 @@ import std/isolation
 
 const
   strShift = sizeof(int) * 8 - 8
-  strLongFlag = low(int)
+
+when cpuEndian == littleEndian:
+  const
+    strLongFlag = 0x01
+else:
+  const
+    strLongFlag = 0xF0
 
 type
   String* = object # LongString
@@ -10,8 +16,6 @@ type
     p: ptr UncheckedArray[char]
 
 template contentSize(cap): int = cap + 1
-
-template isLong(s): bool = (s.cap and strLongFlag) == strLongFlag
 
 template frees(s) =
   if isLong(s) and s.p != nil:
@@ -31,6 +35,33 @@ type
 static: assert sizeof(ShortString) == sizeof(String)
 template short(s): untyped = cast[ptr ShortString](addr s)[]
 
+template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
+
+template shortLen(s): int =
+  when cpuEndian == littleEndian:
+    s.short.len shr 1
+  else:
+    s.short.len
+
+template shortSetLen(s, length) =
+  when cpuEndian == littleEndian:
+    s.short.len = length shl 1
+  else:
+    s.short.len = length
+
+template longCap(s): int =
+  when cpuEndian == littleEndian:
+    s.cap shr 1
+  else:
+    s.cap and not (strLongFlag shl strShift)
+
+template longSetCap(s, capacity) =
+  when cpuEndian == littleEndian:
+    s.cap = capacity shl 1
+  else:
+    s.cap = capacity
+  s.short.len = s.short.len or strLongFlag
+
 proc `=destroy`*(x: var String) =
   frees(x)
 
@@ -45,7 +76,7 @@ proc `=copy`*(a: var String, b: String) =
     else:
       a.p = cast[typeof(a.p)](alloc(contentSize(b.len)))
     a.len = b.len
-    a.cap = b.len or strLongFlag
+    longSetCap(a, b.len)
     copyMem(a.p, b.p, contentSize(a.len))
   else:
     short(a) = b.short
@@ -58,9 +89,8 @@ proc resize(old: int): int {.inline.} =
 #proc prepareAdd(s: var String; addLen: int) =
   #let newLen = s.len + addLen
 
-
 proc len*(s: String): int {.inline.} =
-  if s.isLong: s.len else: s.short.len
+  if s.isLong: s.len else: s.shortLen
 
 proc toCStr*(s: String): cstring {.inline.} =
   if s.isLong: result = cstring(s.p)
@@ -69,5 +99,8 @@ proc toCStr*(s: String): cstring {.inline.} =
 var
   s: String
 
-s.cap = strLongFlag
+echo s.isLong
+#longSetCap(s, 1230)
+#shortSetLen(s, 23)
+echo s.shortLen
 echo s.short.data
