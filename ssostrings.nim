@@ -1,7 +1,14 @@
 import std/isolation
 
 const
-  strLongFlag = 1
+  strShift = sizeof(int) * 8 - 8
+
+when cpuEndian == littleEndian:
+  const
+    strLongFlag = 1
+else:
+  const
+    strLongFlag = low(int8)
 
 type
   LongString = object
@@ -34,11 +41,29 @@ type
 
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
-template shortLen(s): int = s.short.len shr 1
-template shortSetLen(s, length) = s.short.len = length shl 1
+template shortLen(s): int =
+  when cpuEndian == littleEndian:
+    s.short.len shr 1
+  else:
+    s.short.len
 
-template longCap(s): int = s.long.cap shr 1
-template longSetCap(s, capacity) = s.long.cap = capacity shl 1 or strLongFlag
+template shortSetLen(s, length) =
+  when cpuEndian == littleEndian:
+    s.short.len = length shl 1
+  else:
+    s.short.len = length
+
+template longCap(s): int =
+  when cpuEndian == littleEndian:
+    s.long.cap shr 1
+  else:
+    s.long.cap and not (strLongFlag shl strShift)
+
+template longSetCap(s, capacity) =
+  when cpuEndian == littleEndian:
+    s.long.cap = capacity shl 1 or strLongFlag
+  else:
+    s.long.cap = capacity or (strLongFlag shl strShift)
 
 proc `=destroy`*(x: var String) =
   frees(x)
