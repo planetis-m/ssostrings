@@ -1,14 +1,7 @@
 import std/isolation
 
 const
-  strShift = sizeof(int) * 8 - 8
-
-when cpuEndian == littleEndian:
-  const
-    strLongFlag = 0x01
-else:
-  const
-    strLongFlag = 0xF0
+  strLongFlag = 1
 
 type
   LongString = object
@@ -41,30 +34,11 @@ type
 
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
-template shortLen(s): int =
-  when cpuEndian == littleEndian:
-    s.short.len shr 1
-  else:
-    s.short.len
+template shortLen(s): int = s.short.len shr 1
+template shortSetLen(s, length) = s.short.len = length shl 1
 
-template shortSetLen(s, length) =
-  when cpuEndian == littleEndian:
-    s.short.len = length shl 1
-  else:
-    s.short.len = length
-
-template longCap(s): int =
-  when cpuEndian == littleEndian:
-    s.long.cap shr 1
-  else:
-    s.long.cap and not (strLongFlag shl strShift)
-
-template longSetCap(s, capacity) =
-  when cpuEndian == littleEndian:
-    s.long.cap = capacity shl 1
-  else:
-    s.long.cap = capacity
-  s.short.len = s.short.len or strLongFlag
+template longCap(s): int = s.long.cap shr 1
+template longSetCap(s, capacity) = s.long.cap = capacity shl 1 or strLongFlag
 
 proc `=destroy`*(x: var String) =
   frees(x)
@@ -90,11 +64,11 @@ proc resize(old: int): int {.inline.} =
   elif old < 65536: result = old * 2
   else: result = old * 3 div 2 # for large arrays * 3/2 is better
 
-#proc prepareAdd(s: var String; addLen: int) =
-  #let newLen = s.len + addLen
-
 proc len*(s: String): int {.inline.} =
   if s.isLong: s.long.len else: s.shortLen
+
+#proc prepareAdd(s: var String; addLen: int) =
+  #let newLen = s.len + addLen
 
 proc toCStr*(s: String): cstring {.inline.} =
   if s.isLong: result = cstring(s.long.p)
@@ -103,10 +77,8 @@ proc toCStr*(s: String): cstring {.inline.} =
 var
   s: String
 
-shortSetLen(s, 23)
+longSetCap(s, 127)
 echo s.isLong
-let x = s
-echo x.shortLen
-#longSetCap(s, 1230)
-echo s.shortLen
 echo s.short.data
+echo s.shortLen
+echo s.short.len
