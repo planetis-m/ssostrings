@@ -11,29 +11,33 @@ else:
     strLongFlag = 0xF0
 
 type
-  String* = object # LongString
+  LongString = object
     cap, len: int
     p: ptr UncheckedArray[char]
 
 template contentSize(cap): int = cap + 1
 
 template frees(s) =
-  if isLong(s) and s.p != nil:
+  if isLong(s) and s.long.p != nil:
     when compileOption("threads"):
-      deallocShared(s.p)
+      deallocShared(s.long.p)
     else:
-      dealloc(s.p)
+      dealloc(s.long.p)
 
 const
-  strMinCap = max(2, sizeof(String) - 1) - 1
+  strMinCap = max(2, sizeof(LongString) - 1) - 1
 
 type
   ShortString = object
     len: int8
     data: array[strMinCap + 1, char]
 
-static: assert sizeof(ShortString) == sizeof(String)
-template short(s): untyped = cast[ptr ShortString](addr s)[]
+#static: assert sizeof(ShortString) == sizeof(String)
+
+type
+  String* {.union.} = object
+    long: LongString
+    short: ShortString
 
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
@@ -51,15 +55,15 @@ template shortSetLen(s, length) =
 
 template longCap(s): int =
   when cpuEndian == littleEndian:
-    s.cap shr 1
+    s.long.cap shr 1
   else:
-    s.cap and not (strLongFlag shl strShift)
+    s.long.cap and not (strLongFlag shl strShift)
 
 template longSetCap(s, capacity) =
   when cpuEndian == littleEndian:
-    s.cap = capacity shl 1
+    s.long.cap = capacity shl 1
   else:
-    s.cap = capacity
+    s.long.cap = capacity
   s.short.len = s.short.len or strLongFlag
 
 proc `=destroy`*(x: var String) =
@@ -67,19 +71,19 @@ proc `=destroy`*(x: var String) =
 
 proc `=copy`*(a: var String, b: String) =
   if isLong(a):
-    if isLong(b) and a.p == b.p: return
+    if isLong(b) and a.long.p == b.long.p: return
     `=destroy`(a)
     wasMoved(a)
   if isLong(b):
     when compileOption("threads"):
-      a.p = cast[typeof(a.p)](allocShared(contentSize(b.len)))
+      a.long.p = cast[typeof(a.long.p)](allocShared(contentSize(b.long.len)))
     else:
-      a.p = cast[typeof(a.p)](alloc(contentSize(b.len)))
-    a.len = b.len
-    longSetCap(a, b.len)
-    copyMem(a.p, b.p, contentSize(a.len))
+      a.long.p = cast[typeof(a.long.p)](alloc(contentSize(b.long.len)))
+    a.long.len = b.long.len
+    longSetCap(a, b.long.len)
+    copyMem(a.long.p, b.long.p, contentSize(a.long.len))
   else:
-    short(a) = b.short
+    copyMem(addr a, addr b, sizeof(String))
 
 proc resize(old: int): int {.inline.} =
   if old <= 0: result = 4
@@ -90,17 +94,19 @@ proc resize(old: int): int {.inline.} =
   #let newLen = s.len + addLen
 
 proc len*(s: String): int {.inline.} =
-  if s.isLong: s.len else: s.shortLen
+  if s.isLong: s.long.len else: s.shortLen
 
 proc toCStr*(s: String): cstring {.inline.} =
-  if s.isLong: result = cstring(s.p)
+  if s.isLong: result = cstring(s.long.p)
   else: result = cstring(addr s.short.data)
 
 var
   s: String
 
+shortSetLen(s, 23)
 echo s.isLong
+let x = s
+echo x.shortLen
 #longSetCap(s, 1230)
-#shortSetLen(s, 23)
 echo s.shortLen
 echo s.short.data
