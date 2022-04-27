@@ -5,12 +5,12 @@ when cpuEndian == littleEndian:
     strLongFlag = 1
 else:
   const
-    strLongFlag = low(int8)
-    strShift = sizeof(int) * 8 - 8
+    strLongFlag = low(int)
 
 type
   StrPayload = object
     data: UncheckedArray[char]
+
   LongString = object
     cap, len: int
     p: ptr StrPayload
@@ -32,14 +32,13 @@ type
     len: int8
     data: array[strMinCap + 1, char]
 
-#static: assert sizeof(ShortString) == sizeof(String)
-
 type
   String* {.union.} = object
     long: LongString
     short: ShortString
 
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
+
 template data(s): untyped =
   if isLong(s): addr s.long.p.data
   else: cast[ptr UncheckedArray[char]](addr s.short.data)
@@ -60,13 +59,13 @@ template longCap(s): int =
   when cpuEndian == littleEndian:
     s.long.cap shr 1
   else:
-    s.long.cap and not (strLongFlag shl strShift)
+    s.long.cap and not strLongFlag
 
 template longSetCap(s, capacity) =
   when cpuEndian == littleEndian:
     s.long.cap = capacity shl 1 or strLongFlag
   else:
-    s.long.cap = capacity or (strLongFlag shl strShift)
+    s.long.cap = capacity or strLongFlag
 
 proc `=destroy`*(x: var String) =
   frees(x)
