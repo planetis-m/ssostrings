@@ -6,8 +6,7 @@ else:
     strLongFlag = low(int)
 
 type
-  StrPayload = object
-    data: UncheckedArray[char]
+  StrPayload = UncheckedArray[char]
 
   LongString = object
     cap, len: int
@@ -38,8 +37,8 @@ type
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
 template data(s): untyped =
-  if isLong(s): addr s.long.p.data
-  else: cast[ptr UncheckedArray[char]](addr s.short.data)
+  if isLong(s): s.long.p
+  else: cast[ptr StrPayload](addr s.short.data)
 
 template shortLen(s): int =
   when cpuEndian == littleEndian:
@@ -80,7 +79,7 @@ proc `=copy`*(a: var String, b: String) =
       a.long.p = cast[ptr StrPayload](alloc(contentSize(b.long.len)))
     a.long.len = b.long.len
     a.longSetCap b.long.len
-    copyMem(addr a.long.p.data[0], addr b.long.p.data[0], contentSize(a.long.len))
+    copyMem(a.long.p, b.long.p, contentSize(a.long.len))
   else:
     copyMem(addr a, addr b, sizeof(String))
 
@@ -111,7 +110,7 @@ proc prepareAdd(s: var String; addLen: int) =
     let oldLen = s.shortLen
     if oldLen > 0:
       # we are about to append, so there is no need to copy the \0 terminator:
-      copyMem(addr p.data[0], addr s.short.data[0], min(oldLen, newLen))
+      copyMem(addr p[0], addr s.short.data[0], min(oldLen, newLen))
     s.long.len = oldLen
     s.long.p = p
     s.longSetCap newLen
