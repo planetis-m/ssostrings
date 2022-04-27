@@ -37,8 +37,7 @@ type
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
 template data(s): untyped =
-  if isLong(s): s.long.p
-  else: cast[ptr StrPayload](addr s.short.data)
+  if isLong(s): s.long.p else: cast[ptr StrPayload](addr s.short.data)
 
 template shortLen(s): int =
   when cpuEndian == littleEndian:
@@ -195,8 +194,9 @@ proc setLen*(s: var String, newLen: Natural) =
   if newLen == 0:
     discard "do not free the buffer here, pattern 's.setLen 0' is common for avoiding allocations"
   else:
-    if newLen > s.len:
-      prepareAdd(s, newLen - s.len)
+    let oldLen = s.len
+    if newLen > oldLen:
+      prepareAdd(s, newLen - oldLen)
     s.data[newLen] = '\0'
   if isLong(s):
     s.long.len = newLen
