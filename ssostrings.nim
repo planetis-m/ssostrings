@@ -35,8 +35,7 @@ template short(s): untyped = cast[ptr ShortString](addr s)[]
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
 template data(s): untyped =
-  if isLong(s): s.p
-  else: cast[ptr StrPayload](addr s.short.data)
+  if isLong(s): s.p else: cast[ptr StrPayload](addr s.short.data)
 
 template shortLen(s): int =
   when cpuEndian == littleEndian:
