@@ -195,6 +195,61 @@ proc initString*(len: Natural): String =
     else:
       result.shortSetLen len
 
-let s = toStr"Hello, World!Hello, World!"
+proc setLen*(s: var String, newLen: Natural) =
+  if newLen == 0:
+    discard "do not free the buffer here, pattern 's.setLen 0' is common for avoiding allocations"
+  else:
+    if newLen > s.len:
+      prepareAdd(s, newLen - s.len)
+    s.data[newLen] = '\0'
+  if isLong(s):
+    s.long.len = newLen
+  else:
+    s.shortSetLen newLen
+
+# Comparisons
+proc eqStrings*(a, b: String): bool =
+  result = false
+  if a.len == b.len:
+    if a.len == 0: result = true
+    else: result = equalMem(addr a.data[0], addr b.data[0], a.len)
+
+proc `==`*(a, b: String): bool {.inline.} = eqStrings(a, b)
+
+proc cmpStrings*(a, b: String): int =
+  let minLen = min(a.len, b.len)
+  if minLen > 0:
+    result = cmpMem(addr a.data[0], addr b.data[0], minLen)
+    if result == 0:
+      result = a.len - b.len
+  else:
+    result = a.len - b.len
+
+proc `<=`*(a, b: String): bool {.inline.} = cmpStrings(a, b) <= 0
+proc `<`*(a, b: String): bool {.inline.} = cmpStrings(a, b) < 0
+
+proc raiseIndexDefect(i, n: int) {.noinline, noreturn.} =
+  raise newException(IndexDefect, "index " & $i & " not in 0 .. " & $n)
+
+template checkBounds(i, n) =
+  when compileOption("boundChecks"):
+    {.line.}:
+      if i < 0 or i >= n:
+        raiseIndexDefect(i, n-1)
+
+proc `[]`*(x: String; i: int): char {.inline.} =
+  checkBounds(i, x.len)
+  x.data[i]
+
+proc `[]`*(x: var String; i: int): var char {.inline.} =
+  checkBounds(i, x.len)
+  x.data[i]
+
+proc `[]=`*(x: var String; i: int; val: char) {.inline.} =
+  checkBounds(i, x.len)
+  x.data[i] = val
+
+var s = toStr"Hello, World!Hello, World!"
+s.setLen(0)
 echo s.isLong
 echo s.len
