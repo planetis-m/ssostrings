@@ -1,5 +1,3 @@
-import std/isolation
-
 when cpuEndian == littleEndian:
   const
     strLongFlag = 1
