@@ -9,9 +9,10 @@ else:
     strShift = sizeof(int) * 8 - 8
 
 type
+  StrPayload = UncheckedArray[char]
   LongString = object
     cap, len: int
-    p: ptr UncheckedArray[char]
+    p: ptr StrPayload
 
 template contentSize(cap): int = cap + 1
 
@@ -40,7 +41,7 @@ type
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 template data(s): untyped =
   if isLong(s): s.long.p
-  else: cast[ptr UncheckedArray[char]](addr s.short.data)
+  else: cast[ptr StrPayload](addr s.short.data)
 
 template shortLen(s): int =
   when cpuEndian == littleEndian:
@@ -76,11 +77,11 @@ proc `=copy`*(a: var String, b: String) =
     wasMoved(a)
   if isLong(b):
     when compileOption("threads"):
-      a.long.p = cast[typeof(a.long.p)](allocShared(contentSize(b.long.len)))
+      a.long.p = cast[ptr StrPayload](allocShared(contentSize(b.long.len)))
     else:
-      a.long.p = cast[typeof(a.long.p)](alloc(contentSize(b.long.len)))
+      a.long.p = cast[ptr StrPayload](alloc(contentSize(b.long.len)))
     a.long.len = b.long.len
-    longSetCap(a, b.long.len)
+    a.longSetCap b.long.len
     copyMem(a.long.p, b.long.p, contentSize(a.long.len))
   else:
     copyMem(addr a, addr b, sizeof(String))
@@ -100,21 +101,22 @@ proc prepareAdd(s: var String; addLen: int) =
     if newLen > oldCap:
       let newCap = max(newLen, resize(oldCap))
       when compileOption("threads"):
-        s.long.p = cast[typeof(s.long.p)](reallocShared0(s.long.p, contentSize(oldCap), contentSize(newCap)))
+        s.long.p = cast[ptr StrPayload](reallocShared0(s.long.p, contentSize(oldCap), contentSize(newCap)))
       else:
-        s.long.p = cast[typeof(s.long.p)](realloc0(s.long.p, contentSize(oldCap), contentSize(newCap)))
-      longSetCap(s, newCap)
+        s.long.p = cast[ptr StrPayload](realloc0(s.long.p, contentSize(oldCap), contentSize(newCap)))
+      s.longSetCap newCap
   elif newLen > strMinCap:
     when compileOption("threads"):
-      let p = cast[typeof(s.long.p)](allocShared0(contentSize(newLen)))
+      let p = cast[ptr StrPayload](allocShared0(contentSize(newLen)))
     else:
-      let p = cast[typeof(s.long.p)](alloc0(contentSize(newLen)))
-    if s.shortLen > 0:
+      let p = cast[ptr StrPayload](alloc0(contentSize(newLen)))
+    let oldLen = s.shortLen
+    if oldLen > 0:
       # we are about to append, so there is no need to copy the \0 terminator:
-      copyMem(addr p[0], addr s.short.data[0], min(s.shortLen, newLen))
-    s.long.len = s.shortLen
+      copyMem(addr p[0], addr s.short.data[0], min(oldLen, newLen))
+    s.long.len = oldLen
     s.long.p = p
-    longSetCap(s, newLen)
+    s.longSetCap newLen
 
 proc add*(s: var String; c: char) {.inline.} =
   prepareAdd(s, 1)
@@ -124,7 +126,7 @@ proc add*(s: var String; c: char) {.inline.} =
   if isLong(s):
     inc s.long.len
   else:
-    s.shortSetLen(len+1)
+    s.shortSetLen len+1
 
 proc add*(dest: var String; src: String) {.inline.} =
   let srcLen = src.len
@@ -136,16 +138,63 @@ proc add*(dest: var String; src: String) {.inline.} =
     if isLong(dest):
       inc dest.long.len, srcLen
     else:
-      dest.shortSetLen(destLen+srcLen)
+      dest.shortSetLen destLen+srcLen
+
+proc cstrToStr(str: cstring, len: int): String =
+  if len <= 0:
+    discard #result = String()
+  else:
+    if len > strMinCap:
+      when compileOption("threads"):
+        let p = cast[ptr StrPayload](allocShared(contentSize(len)))
+      else:
+        let p = cast[ptr StrPayload](alloc(contentSize(len)))
+      result.longSetCap len
+      result.long.p = p
+      result.long.len = len
+    else:
+      result.shortSetLen len
+    copyMem(addr result.data[0], str, len+1)
+
+proc toStr*(str: cstring): String {.inline.} =
+  if str == nil: cstrToStr(str, 0)
+  else: cstrToStr(str, str.len)
+
+proc toStr*(str: string): String {.inline.} =
+  cstrToStr(str.cstring, str.len)
 
 proc toCStr*(s: String): cstring {.inline.} =
   if s.isLong: result = cstring(s.long.p)
   else: result = cstring(addr s.short.data)
 
-var
-  s: String
+proc initStringOfCap*(space: Natural): String =
+  # this is also 'system.newStringOfCap'.
+  if space <= 0:
+    discard #result = String()
+  else:
+    if space > strMinCap:
+      when compileOption("threads"):
+        let p = cast[ptr StrPayload](allocShared0(contentSize(space)))
+      else:
+        let p = cast[ptr StrPayload](alloc0(contentSize(space)))
+      result.longSetCap space
+      result.long.p = p
 
-for c in "Hello, World!Hello, World!":
-  s.add(c)
+proc initString*(len: Natural): String =
+  if len <= 0:
+    discard #result = String()
+  else:
+    if len > strMinCap:
+      when compileOption("threads"):
+        let p = cast[ptr StrPayload](allocShared0(contentSize(len)))
+      else:
+        let p = cast[ptr StrPayload](alloc0(contentSize(len)))
+      result.longSetCap len
+      result.long.p = p
+      result.long.len = len
+    else:
+      result.shortSetLen len
 
+let s = toStr"Hello, World!Hello, World!"
 echo s.isLong
+echo s.len
