@@ -139,17 +139,17 @@ proc add*(dest: var String; src: String) {.inline.} =
 
 proc cstrToStr(str: cstring, len: int): String =
   if len <= 0:
-    result = String()
+    discard #result = String()
   else:
     if len > strMinCap:
       when compileOption("threads"):
         let p = cast[ptr StrPayload](allocShared(contentSize(len)))
       else:
         let p = cast[ptr StrPayload](alloc(contentSize(len)))
-      result = String(long: LongString(len: len, p: p))
       result.longSetCap len
+      result.long.p = p
+      result.long.len = len
     else:
-      result = String()
       result.shortSetLen len
     copyMem(addr result.data[0], str, len+1)
 
@@ -166,31 +166,29 @@ proc toCStr*(s: String): cstring {.inline.} =
 proc initStringOfCap*(space: Natural): String =
   # this is also 'system.newStringOfCap'.
   if space <= 0:
-    result = String()
+    discard #result = String()
   else:
     if space > strMinCap:
       when compileOption("threads"):
         let p = cast[ptr StrPayload](allocShared0(contentSize(space)))
       else:
         let p = cast[ptr StrPayload](alloc0(contentSize(space)))
-      result = String(long: LongString(len: 0, p: p))
       result.longSetCap space
-    else:
-      result = String()
+      result.long.p = p
 
 proc initString*(len: Natural): String =
   if len <= 0:
-    result = String()
+    discard #result = String()
   else:
     if len > strMinCap:
       when compileOption("threads"):
         let p = cast[ptr StrPayload](allocShared0(contentSize(len)))
       else:
         let p = cast[ptr StrPayload](alloc0(contentSize(len)))
-      result = String(long: LongString(len: len, p: p))
       result.longSetCap len
+      result.long.p = p
+      result.long.len = len
     else:
-      result = String()
       result.shortSetLen len
 
 proc setLen*(s: var String, newLen: Natural) =
