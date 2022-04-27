@@ -112,6 +112,7 @@ proc prepareAdd(s: var String; addLen: int) =
     if s.shortLen > 0:
       # we are about to append, so there is no need to copy the \0 terminator:
       copyMem(addr p[0], addr s.short.data[0], min(s.shortLen, newLen))
+    s.long.len = s.shortLen
     s.long.p = p
     longSetCap(s, newLen)
 
@@ -144,9 +145,7 @@ proc toCStr*(s: String): cstring {.inline.} =
 var
   s: String
 
-for c in "Hello, World!":
+for c in "Hello, World!Hello, World!":
   s.add(c)
 
 echo s.isLong
-echo s.short.data
-echo s.shortLen
