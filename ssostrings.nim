@@ -6,11 +6,9 @@ else:
     strLongFlag = low(int)
 
 type
-  StrPayload = UncheckedArray[char]
-
   LongString = object
     cap, len: int
-    p: ptr StrPayload
+    p: ptr UncheckedArray[char]
 
 template contentSize(cap): int = cap + 1
 
@@ -37,7 +35,7 @@ type
 template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
 
 template data(s): untyped =
-  if isLong(s): s.long.p else: cast[ptr StrPayload](addr s.short.data)
+  if isLong(s): s.long.p else: cast[ptr UncheckedArray[char]](addr s.short.data[0])
 
 template shortLen(s): int =
   when cpuEndian == littleEndian:
@@ -47,9 +45,9 @@ template shortLen(s): int =
 
 template shortSetLen(s, length) =
   when cpuEndian == littleEndian:
-    s.short.len = length.int8 shl 1
+    s.short.len = int8(length) shl 1
   else:
-    s.short.len = length.int8
+    s.short.len = int8(length)
 
 template longCap(s): int =
   when cpuEndian == littleEndian:
@@ -73,9 +71,9 @@ proc `=copy`*(a: var String, b: String) =
     wasMoved(a)
   if isLong(b):
     when compileOption("threads"):
-      a.long.p = cast[ptr StrPayload](allocShared(contentSize(b.long.len)))
+      a.long.p = cast[ptr UncheckedArray[char]](allocShared(contentSize(b.long.len)))
     else:
-      a.long.p = cast[ptr StrPayload](alloc(contentSize(b.long.len)))
+      a.long.p = cast[ptr UncheckedArray[char]](alloc(contentSize(b.long.len)))
     a.long.len = b.long.len
     a.longSetCap b.long.len
     copyMem(a.long.p, b.long.p, contentSize(a.long.len))
@@ -97,26 +95,28 @@ proc prepareAdd(s: var String; addLen: int) =
     if newLen > oldCap:
       let newCap = max(newLen, resize(oldCap))
       when compileOption("threads"):
-        s.long.p = cast[ptr StrPayload](reallocShared0(s.long.p, contentSize(oldCap), contentSize(newCap)))
+        s.long.p = cast[ptr UncheckedArray[char]](
+            reallocShared0(s.long.p, contentSize(oldCap), contentSize(newCap)))
       else:
-        s.long.p = cast[ptr StrPayload](realloc0(s.long.p, contentSize(oldCap), contentSize(newCap)))
+        s.long.p = cast[ptr UncheckedArray[char]](
+            realloc0(s.long.p, contentSize(oldCap), contentSize(newCap)))
       s.longSetCap newCap
   elif newLen > strMinCap:
     when compileOption("threads"):
-      let p = cast[ptr StrPayload](allocShared0(contentSize(newLen)))
+      let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(newLen)))
     else:
-      let p = cast[ptr StrPayload](alloc0(contentSize(newLen)))
+      let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(newLen)))
     let oldLen = s.shortLen
     if oldLen > 0:
       # we are about to append, so there is no need to copy the \0 terminator:
-      copyMem(addr p[0], addr s.short.data[0], min(oldLen, newLen))
+      copyMem(p, addr s.short.data[0], min(oldLen, newLen))
     s.long.len = oldLen
     s.long.p = p
     s.longSetCap newLen
 
 proc add*(s: var String; c: char) {.inline.} =
-  prepareAdd(s, 1)
   let len = s.len
+  prepareAdd(s, 1)
   s.data[len] = c
   s.data[len+1] = '\0'
   if isLong(s):
@@ -130,7 +130,7 @@ proc add*(dest: var String; src: String) {.inline.} =
     prepareAdd(dest, srcLen)
     let destLen = dest.len
     # also copy the \0 terminator:
-    copyMem(addr dest.data[destLen], addr src.data[0], srcLen+1)
+    copyMem(addr dest.data[destLen], src.data, srcLen+1)
     if isLong(dest):
       inc dest.long.len, srcLen
     else:
@@ -142,15 +142,15 @@ proc cstrToStr(str: cstring, len: int): String =
   else:
     if len > strMinCap:
       when compileOption("threads"):
-        let p = cast[ptr StrPayload](allocShared(contentSize(len)))
+        let p = cast[ptr UncheckedArray[char]](allocShared(contentSize(len)))
       else:
-        let p = cast[ptr StrPayload](alloc(contentSize(len)))
+        let p = cast[ptr UncheckedArray[char]](alloc(contentSize(len)))
       result.longSetCap len
       result.long.p = p
       result.long.len = len
     else:
       result.shortSetLen len
-    copyMem(addr result.data[0], str, len+1)
+    copyMem(result.data, str, len+1)
 
 proc toStr*(str: cstring): String {.inline.} =
   if str == nil: cstrToStr(str, 0)
@@ -169,9 +169,9 @@ proc initStringOfCap*(space: Natural): String =
   else:
     if space > strMinCap:
       when compileOption("threads"):
-        let p = cast[ptr StrPayload](allocShared0(contentSize(space)))
+        let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(space)))
       else:
-        let p = cast[ptr StrPayload](alloc0(contentSize(space)))
+        let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(space)))
       result.longSetCap space
       result.long.p = p
 
@@ -181,9 +181,9 @@ proc initString*(len: Natural): String =
   else:
     if len > strMinCap:
       when compileOption("threads"):
-        let p = cast[ptr StrPayload](allocShared0(contentSize(len)))
+        let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(len)))
       else:
-        let p = cast[ptr StrPayload](alloc0(contentSize(len)))
+        let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(len)))
       result.longSetCap len
       result.long.p = p
       result.long.len = len
@@ -208,14 +208,14 @@ proc eqStrings*(a, b: String): bool =
   result = false
   if a.len == b.len:
     if a.len == 0: result = true
-    else: result = equalMem(addr a.data[0], addr b.data[0], a.len)
+    else: result = equalMem(a.data, b.data, a.len)
 
 proc `==`*(a, b: String): bool {.inline.} = eqStrings(a, b)
 
 proc cmpStrings*(a, b: String): int =
   let minLen = min(a.len, b.len)
   if minLen > 0:
-    result = cmpMem(addr a.data[0], addr b.data[0], minLen)
+    result = cmpMem(a.data, b.data, minLen)
     if result == 0:
       result = a.len - b.len
   else:
