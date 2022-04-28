@@ -47,7 +47,7 @@ proc test[T] =
   echo "----------------------------"
   echo $T, " (", sizeof(T), " bytes)"
   echo "----------------------------"
-  for length in 21 .. 24:
+  for length in 22 .. 23:
     echo "Length ", length, ": "
     let testString = data[0..<length]
     var strings = newSeqOfCap[T](reps)
@@ -65,6 +65,11 @@ proc test[T] =
       var move = move(strings[0])
       inc count, move.len
       strings[0] = move(move)
+
+    count = 0
+    bench("Compare " & $T, reps):
+      for i in 1..<strings.len:
+        inc count, myCmp(strings[0], strings[i])
 
     bench("Sort " & $T, reps):
       sort(strings, myCmp)
