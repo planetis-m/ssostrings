@@ -1,4 +1,4 @@
-import std/[times, stats, strformat]
+import std/[algorithm, times, stats, strformat]
 import cowstrings, ssostrings
 
 proc warmup() =
@@ -33,10 +33,20 @@ template bench(name, samples, code: untyped) =
 converter toCow(str: string): cowstrings.String = cowstrings.toStr(str)
 converter toSso(str: string): ssostrings.String = ssostrings.toStr(str)
 
+proc myCmp[T](a, b: T): int =
+  when T is cowstrings.String:
+    cowstrings.cmpStrings(a, b)
+  elif T is ssostrings.String:
+    ssostrings.cmpStrings(a, b)
+  else:
+    cmp[T](a, b)
+
 proc test[T] =
   const data = "01234567890123456789012345678901234567890123456789"
-  const reps = 100_0000
+  const reps = 10000
+  echo "----------------------------"
   echo $T, " (", sizeof(T), " bytes)"
+  echo "----------------------------"
   for length in 21 .. 24:
     echo "Length ", length, ": "
     let testString = data[0..<length]
@@ -55,6 +65,9 @@ proc test[T] =
       var move = move(strings[0])
       inc count, move.len
       strings[0] = move(move)
+
+    bench("Sort " & $T, reps):
+      sort(strings, myCmp)
 
 proc main =
   warmup()
