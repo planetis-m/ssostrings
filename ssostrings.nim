@@ -11,6 +11,7 @@ type
     p: ptr UncheckedArray[char]
 
 template contentSize(cap): int = cap + 1
+template isLong(s): bool = (s.cap and strLongFlag) == strLongFlag
 
 template frees(s) =
   if isLong(s) and s.p != nil:
@@ -30,8 +31,6 @@ type
 static: assert sizeof(ShortString) == sizeof(String)
 template short(s): untyped = cast[ptr ShortString](addr s)[]
 
-template isLong(s): bool = (s.short.len and strLongFlag) == strLongFlag
-
 template data(s): untyped =
   if isLong(s): s.p else: cast[ptr UncheckedArray[char]](addr s.short.data[0])
 
@@ -41,11 +40,11 @@ template shortLen(s): int =
   else:
     s.short.len
 
-template setShortLen(s, length) =
+template setShortLen(s, n) =
   when cpuEndian == littleEndian:
-    s.short.len = length.int8 shl 1
+    s.short.len = int8(n) shl 1
   else:
-    s.short.len = length.int8
+    s.short.len = int8(n)
 
 template longCap(s): int =
   when cpuEndian == littleEndian:
@@ -53,11 +52,11 @@ template longCap(s): int =
   else:
     s.cap and not strLongFlag
 
-template setLongCap(s, capacity) =
+template setLongCap(s, n) =
   when cpuEndian == littleEndian:
-    s.cap = capacity shl 1 or strLongFlag
+    s.cap = n shl 1 or strLongFlag
   else:
-    s.cap = capacity or strLongFlag
+    s.cap = n or strLongFlag
 
 proc `=destroy`*(x: var String) =
   frees(x)

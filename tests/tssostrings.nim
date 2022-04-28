@@ -16,6 +16,6 @@ proc main =
       let expected = data[0..<strLen]
       let str = toStr(expected)
       assert(str.len == strLen)
-      assert($str.toCstr == expected)
+      assert(str == expected.toStr)
 
 main()
