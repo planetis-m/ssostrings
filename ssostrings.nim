@@ -48,7 +48,7 @@ template setShortLen(s, n) =
 
 template longCap(s): int =
   when cpuEndian == littleEndian:
-    s.cap shr 1
+    int(uint(s.cap) shr 1)
   else:
     s.cap and not strLongFlag
 
