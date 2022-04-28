@@ -156,7 +156,7 @@ proc toStr*(str: cstring): String {.inline.} =
 proc toStr*(str: string): String {.inline.} =
   cstrToStr(str.cstring, str.len)
 
-proc toCStr*(s: String): cstring {.inline.} =
+proc toCStr*(s: var String): cstring {.inline.} =
   result = cstring(s.data)
 
 proc initStringOfCap*(space: Natural): String =

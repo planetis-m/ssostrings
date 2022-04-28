@@ -14,8 +14,8 @@ proc main =
     for i in 0..data.len:
       let strLen = data.len - i
       let expected = data[0..<strLen]
-      let str = toStr(expected)
+      var str = toStr(expected)
       assert(str.len == strLen)
-      assert(str == expected.toStr)
+      assert(str.toCstr == expected.cstring)
 
 main()
