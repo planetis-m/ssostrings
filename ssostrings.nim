@@ -202,21 +202,22 @@ proc setLen*(s: var String, newLen: Natural) =
 
 # Comparisons
 proc eqStrings*(a, b: String): bool =
-  result = false
-  if len(a) == len(b):
-    if len(a) == 0: result = true
-    else: result = equalMem(a.data, b.data, len(a))
+  let aLen = len(a)
+  if aLen != len(b):
+    result = false
+  else: result = equalMem(a.data, b.data, aLen)
 
 proc `==`*(a, b: String): bool {.inline.} = eqStrings(a, b)
 
 proc cmpStrings*(a, b: String): int =
-  let minLen = min(len(a), len(b))
-  if minLen > 0:
-    result = cmpMem(a.data, b.data, minLen)
-    if result == 0:
-      result = len(a) - len(b)
-  else:
-    result = len(a) - len(b)
+  let aLen = len(a)
+  let bLen = len(b)
+  result = cmpMem(a.data, b.data, min(aLen, bLen))
+  if result == 0:
+    if aLen < bLen:
+      result = -1
+    elif aLen > bLen:
+      result = 1
 
 proc `<=`*(a, b: String): bool {.inline.} = cmpStrings(a, b) <= 0
 proc `<`*(a, b: String): bool {.inline.} = cmpStrings(a, b) < 0

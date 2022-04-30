@@ -47,9 +47,10 @@ proc test[T] =
   echo "----------------------------"
   echo $T, " (", sizeof(T), " bytes)"
   echo "----------------------------"
-  for length in 22 .. 23:
+  for length in [16, 22, 23]:
     echo "Length ", length, ": "
-    let testString = data[0..<length]
+    var testString = data[0..<length]
+    #prepareMutation(testString)
     var strings = newSeqOfCap[T](reps)
 
     bench("Construction " & $T, reps):
@@ -67,17 +68,22 @@ proc test[T] =
       strings[0] = move(move)
 
     count = 0
-    bench("Compare " & $T, reps):
+    bench("Equal " & $T, reps):
       for i in 1..<strings.len:
-        inc count, myCmp(strings[0], strings[i])
+        inc count, int(strings[0] == strings[i])
 
-    bench("Sort " & $T, reps):
-      sort(strings, myCmp)
+    #count = 0
+    #bench("Compare " & $T, reps):
+      #for i in 1..<strings.len:
+        #inc count, myCmp(strings[0], strings[i])
+
+    #bench("Sort " & $T, reps):
+      #sort(strings, myCmp)
 
 proc main =
-  warmup()
-  test[string]()
+  #warmup()
+  #test[string]()
   test[ssostrings.String]()
-  test[cowstrings.String]()
+  #test[cowstrings.String]()
 
 main()
