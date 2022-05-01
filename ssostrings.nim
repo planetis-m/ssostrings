@@ -83,7 +83,7 @@ proc resize(old: int): int {.inline.} =
   else: result = old * 3 div 2 # for large arrays * 3/2 is better
 
 proc len*(s: String): int {.inline.} =
-  if s.isLong: s.len else: s.shortLen
+  if isLong(s): s.len else: s.shortLen
 
 proc prepareAdd(s: var String; addLen: int) =
   let newLen = len(s) + addLen

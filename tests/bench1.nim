@@ -33,7 +33,7 @@ template bench(name, samples, code: untyped) =
 converter toCow(str: string): cowstrings.String = cowstrings.toStr(str)
 converter toSso(str: string): ssostrings.String = ssostrings.toStr(str)
 
-proc myCmp[T](a, b: T): int =
+proc myCmp[T](a, b: T): int {.inline.} =
   when T is cowstrings.String:
     cowstrings.cmpStrings(a, b)
   elif T is ssostrings.String:
@@ -41,13 +41,23 @@ proc myCmp[T](a, b: T): int =
   else:
     cmp[T](a, b)
 
+import strutils, parsesso
+
+proc myParseInt[T](s: T): int {.inline.} =
+  when T is cowstrings.String:
+    parsesso.parseInt(s)
+  elif T is ssostrings.String:
+    parsesso.parseInt(s)
+  else:
+    strutils.parseInt(s)
+
 proc test[T] =
   const data = "01234567890123456789012345678901234567890123456789"
-  const reps = 10000
+  const reps = 10_000
   echo "----------------------------"
   echo $T, " (", sizeof(T), " bytes)"
   echo "----------------------------"
-  for length in [16, 22, 23]:
+  for length in [14, 16]:
     echo "Length ", length, ": "
     var testString = data[0..<length]
     #prepareMutation(testString)
@@ -67,23 +77,33 @@ proc test[T] =
       inc count, move.len
       strings[0] = move(move)
 
-    count = 0
-    bench("Equal " & $T, reps):
-      for i in 1..<strings.len:
-        inc count, int(strings[0] == strings[i])
+    #count = 0
+    #bench("Equal " & $T, reps):
+      #for i in 1..<strings.len:
+        #inc count, int(strings[0] == strings[i])
 
     #count = 0
     #bench("Compare " & $T, reps):
       #for i in 1..<strings.len:
         #inc count, myCmp(strings[0], strings[i])
 
+    # Can't measure long strings
+    count = 0
+    bench("ParseInt " & $T, reps):
+      for i in 0..strings.high:
+        inc count, myParseInt(strings[i])
+
+    bench("Append " & $T, reps):
+      for i in 0..strings.high-1:
+        strings[i].add data[i mod data.len]
+
     #bench("Sort " & $T, reps):
       #sort(strings, myCmp)
 
 proc main =
   #warmup()
-  #test[string]()
+  test[string]()
   test[ssostrings.String]()
-  #test[cowstrings.String]()
+  test[cowstrings.String]()
 
 main()
