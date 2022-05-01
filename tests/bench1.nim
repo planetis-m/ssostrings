@@ -1,5 +1,5 @@
 import std/[algorithm, times, stats, strformat]
-import cowstrings, ssostrings
+import cowstrings, ssostrings, strutils, parsesso
 
 proc warmup() =
   # Warmup - make sure cpu is on max perf
@@ -32,32 +32,31 @@ template bench(name, samples, code: untyped) =
 
 converter toCow(str: string): cowstrings.String = cowstrings.toStr(str)
 converter toSso(str: string): ssostrings.String = ssostrings.toStr(str)
+converter toArray(str: string): array[24, char] = copyMem(addr result, addr str[0], sizeof(result))
 
 proc myCmp[T](a, b: T): int {.inline.} =
   when T is cowstrings.String:
     cowstrings.cmpStrings(a, b)
   elif T is ssostrings.String:
     ssostrings.cmpStrings(a, b)
+  elif T is array:
+    cmpMem(addr a, addr b, sizeof(T))
   else:
-    cmp[T](a, b)
+    cmp(a, b)
 
-import strutils, parsesso
-
-proc myParseInt[T](s: T): int {.inline.} =
-  when T is cowstrings.String:
-    parsesso.parseInt(s)
-  elif T is ssostrings.String:
-    parsesso.parseInt(s)
+proc myParseBinInt[T](s: T): int {.inline.} =
+  when T is string:
+    strutils.parseBinInt(s)
   else:
-    strutils.parseInt(s)
+    parsesso.parseBinInt(s)
 
 proc test[T] =
-  const data = "01234567890123456789012345678901234567890123456789"
+  const data = "0100111001101001111011010100111001101001"
   const reps = 10_000
   echo "----------------------------"
   echo $T, " (", sizeof(T), " bytes)"
   echo "----------------------------"
-  for length in [14, 16]:
+  for length in [22, 23]:
     echo "Length ", length, ": "
     var testString = data[0..<length]
     #prepareMutation(testString)
@@ -67,35 +66,35 @@ proc test[T] =
       strings.add(testString)
 
     var count = 0
-    bench("Copy " & $T, reps):
-      var copy = strings[0]
-      inc count, copy.len
+    #bench("Copy " & $T, reps):
+      #var copy = strings[0]
+      #inc count, copy.len
 
-    count = 0
-    bench("Move " & $T, reps):
-      var move = move(strings[0])
-      inc count, move.len
-      strings[0] = move(move)
+    #count = 0
+    #bench("Move " & $T, reps):
+      #var move = move(strings[0])
+      #inc count, move.len
+      #strings[0] = move(move)
 
     #count = 0
     #bench("Equal " & $T, reps):
       #for i in 1..<strings.len:
         #inc count, int(strings[0] == strings[i])
 
-    #count = 0
-    #bench("Compare " & $T, reps):
-      #for i in 1..<strings.len:
-        #inc count, myCmp(strings[0], strings[i])
-
-    # Can't measure long strings
     count = 0
-    bench("ParseInt " & $T, reps):
-      for i in 0..strings.high:
-        inc count, myParseInt(strings[i])
+    bench("Compare " & $T, reps):
+      for i in 1..<strings.len:
+        inc count, myCmp(strings[0], strings[i])
 
-    bench("Append " & $T, reps):
-      for i in 0..strings.high-1:
-        strings[i].add data[i mod data.len]
+    count = 0
+    bench("ParseBin " & $T, reps):
+      for i in 0..strings.high:
+        inc count, myParseBinInt(strings[i])
+
+    #when T isnot array:
+      #bench("Append " & $T, reps):
+        #for i in 0..strings.high-1:
+          #strings[i].add data[i mod data.len]
 
     #bench("Sort " & $T, reps):
       #sort(strings, myCmp)
@@ -103,7 +102,8 @@ proc test[T] =
 proc main =
   #warmup()
   test[string]()
+  #test[array[24, char]]()
   test[ssostrings.String]()
-  test[cowstrings.String]()
+  #test[cowstrings.String]()
 
 main()
