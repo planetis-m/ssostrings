@@ -124,8 +124,8 @@ proc add*(s: var String; c: char) {.inline.} =
 proc add*(dest: var String; src: String) {.inline.} =
   let srcLen = len(src)
   if srcLen > 0:
-    prepareAdd(dest, srcLen)
     let destLen = len(dest)
+    prepareAdd(dest, srcLen)
     # also copy the \0 terminator:
     copyMem(addr dest.data[destLen], src.data, srcLen+1)
     if isLong(dest):
