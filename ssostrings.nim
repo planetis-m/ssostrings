@@ -156,8 +156,9 @@ proc toStr*(str: cstring): String {.inline.} =
 proc toStr*(str: string): String {.inline.} =
   cstrToStr(str.cstring, str.len)
 
-proc toCStr*(s: ptr String): cstring {.inline.} =
-  result = cstring(s.data)
+proc toCStr*(s: ptr String): cstring =
+  if isLong(s): cstring(s.p)
+  else: cast[ptr UncheckedArray[char]](addr cast[ptr ShortString](s)[].data[0])
 
 template toCStr*(s: String): cstring = toCStr(addr s)
 

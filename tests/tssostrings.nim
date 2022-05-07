@@ -1,4 +1,4 @@
-import ssostrings
+import ssostrings, std/enumerate
 
 proc main =
   block:
@@ -11,11 +11,18 @@ proc main =
     assert(str == expected)
   block:
     let data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    var a: seq[String]
     for i in 0..data.len:
       let strLen = data.len - i
       let expected = data[0..<strLen]
-      let str = toStr(expected)
-      assert(str.len == strLen)
+      var str = toStr(expected)
       assert(str.toCStr == expected.cstring)
+      assert(str.len == strLen)
+      a.add(str)
+    for i, str in enumerate(mitems(a)):
+      let strLen = data.len - i
+      let expected = data[0..<strLen]
+      assert(str.toCStr == expected.cstring)
+      assert(str.len == strLen)
 
 main()
