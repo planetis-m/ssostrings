@@ -156,7 +156,7 @@ proc toStr*(str: cstring): String {.inline.} =
 proc toStr*(str: string): String {.inline.} =
   cstrToStr(str.cstring, str.len)
 
-proc toCStr*(s: ptr String): cstring =
+proc toCStr*(s: ptr String): cstring {.inline.} =
   result = cstring(s[].data)
 
 template toCStr*(s: String): cstring = toCStr(addr s)
