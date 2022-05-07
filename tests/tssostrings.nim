@@ -16,9 +16,9 @@ proc main =
       let strLen = data.len - i
       let expected = data[0..<strLen]
       var str = toStr(expected)
+      a.add(str)
       assert(str.toCStr == expected.cstring)
       assert(str.len == strLen)
-      a.add(str)
     for i, str in enumerate(mitems(a)):
       let strLen = data.len - i
       let expected = data[0..<strLen]
