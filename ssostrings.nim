@@ -29,7 +29,7 @@ type
     data: array[strMinCap + 1, char]
 
 static: assert sizeof(ShortString) == sizeof(String)
-template short(s: String): untyped = cast[ptr ShortString](addr s)[]
+template short(s: String): untyped = cast[ptr ShortString](addr s)
 
 template data(s: String): untyped =
   if isLong(s): s.p else: cast[ptr UncheckedArray[char]](addr s.short.data[0])
