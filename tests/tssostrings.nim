@@ -19,7 +19,7 @@ proc main =
       a.add(str)
       assert(str.toCStr == expected.cstring)
       assert(str.len == strLen)
-    for i, str in enumerate(mitems(a)):
+    for i, str in enumerate(items(a)):
       let strLen = data.len - i
       let expected = data[0..<strLen]
       assert(str.toCStr == expected.cstring)

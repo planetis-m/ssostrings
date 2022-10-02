@@ -1,5 +1,5 @@
 import std/[algorithm, times, stats, strformat]
-import cowstrings, ssostrings, strutils, parsesso
+import ssostrings, strutils, parsesso
 
 proc warmup() =
   # Warmup - make sure cpu is on max perf
@@ -30,14 +30,12 @@ template bench(name, samples, code: untyped) =
   let globalDuration = cpuTime() - globalStart
   printStats(name, stats, globalDuration)
 
-converter toCow(str: string): cowstrings.String = cowstrings.toStr(str)
+#converter toCow(str: string): cowstrings.String = cowstrings.toStr(str)
 converter toSso(str: string): ssostrings.String = ssostrings.toStr(str)
 converter toArray(str: string): array[24, char] = copyMem(addr result, addr str[0], sizeof(result))
 
 proc myCmp[T](a, b: T): int {.inline.} =
-  when T is cowstrings.String:
-    cowstrings.cmpStrings(a, b)
-  elif T is ssostrings.String:
+  when T is ssostrings.String:
     ssostrings.cmpStrings(a, b)
   elif T is array:
     cmpMem(addr a, addr b, sizeof(T))
