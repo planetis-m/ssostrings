@@ -135,7 +135,7 @@ proc add*(dest: var String; src: String) {.inline.} =
 
 proc cstrToStr(str: cstring, len: int): String =
   if len <= 0:
-    result = String(cap: 0, len: 0, p: nil)
+    result = default(String)
   else:
     if len > strMinCap:
       when compileOption("threads"):
@@ -164,7 +164,7 @@ template toCStr*(s: String): cstring = toCStr(addr s)
 proc initStringOfCap*(space: Natural): String =
   # this is also 'system.newStringOfCap'.
   if space <= 0:
-    result = String(cap: 0, len: 0, p: nil)
+    result = default(String)
   else:
     if space > strMinCap:
       when compileOption("threads"):
@@ -178,7 +178,7 @@ proc initStringOfCap*(space: Natural): String =
 
 proc initString*(len: Natural): String =
   if len <= 0:
-    result = String(cap: 0, len: 0, p: nil)
+    result = default(String)
   else:
     if len > strMinCap:
       when compileOption("threads"):
