@@ -142,10 +142,10 @@ proc cstrToStr(str: cstring, len: int): String =
         let p = cast[ptr UncheckedArray[char]](allocShared(contentSize(len)))
       else:
         let p = cast[ptr UncheckedArray[char]](alloc(contentSize(len)))
+      result = String(p: p, len: len)
       result.setLongCap len
-      result.p = p
-      result.len = len
     else:
+      result = default(String)
       result.setShortLen len
     copyMem(result.data, str, len+1)
 
@@ -171,8 +171,10 @@ proc initStringOfCap*(space: Natural): String =
         let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(space)))
       else:
         let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(space)))
+      result = String(p: p)
       result.setLongCap space
-      result.p = p
+    else:
+      result = default(String)
 
 proc initString*(len: Natural): String =
   if len <= 0:
@@ -183,10 +185,10 @@ proc initString*(len: Natural): String =
         let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(len)))
       else:
         let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(len)))
+      result = String(p: p, len: len)
       result.setLongCap len
-      result.p = p
-      result.len = len
     else:
+      result = default(String)
       result.setShortLen len
 
 proc setLen*(s: var String, newLen: Natural) =
