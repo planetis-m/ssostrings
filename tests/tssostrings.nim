@@ -1,4 +1,10 @@
-import ssostrings, std/enumerate
+import ssostrings, std/enumerate, std/parseutils
+
+template toOa(s: String; first, last: int): untyped =
+  toOpenArray(toCStr(addr s), first, last)
+
+template toOa(s: String): untyped =
+  toOpenArray(toCStr(addr s), 0, len(s)-1)
 
 proc main =
   block:
@@ -24,5 +30,10 @@ proc main =
       let expected = data[0..<strLen]
       assert(str.toCStr == expected.cstring)
       assert(str.len == strLen)
+  block:
+    var str = toStr(cstring"7B")
+    var num = 0
+    assert parseHex(str.toOa, num) == 2
+    assert num == 123
 
 main()
