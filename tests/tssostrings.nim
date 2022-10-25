@@ -1,10 +1,8 @@
 import ssostrings, std/enumerate, std/parseutils
 
-template toOa(s: String; first, last: int): untyped =
-  toOpenArray(toCStr(addr s), first, last)
-
-template toOa(s: String): untyped =
-  toOpenArray(toCStr(addr s), 0, len(s)-1)
+proc parseHex[T: SomeInteger](s: String, number: var T, start = 0,
+                              maxLen = 0): int {.noSideEffect, inline.} =
+  parseHex(s.toOpenArray(start, s.high), number, maxLen)
 
 proc main =
   block:
@@ -33,7 +31,7 @@ proc main =
   block:
     var str = toStr(cstring"7B")
     var num = 0
-    assert parseHex(str.toOa, num) == 2
+    assert parseHex(str, num) == 2
     assert num == 123
 
 main()

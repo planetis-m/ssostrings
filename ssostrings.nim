@@ -85,6 +85,9 @@ proc resize(old: int): int {.inline.} =
 proc len*(s: String): int {.inline.} =
   if isLong(s): s.len else: s.shortLen
 
+proc high*(s: String): int {.inline.} = len(s)-1
+proc low*(s: String): int {.inline.} = 0
+
 proc prepareAdd(s: var String; addLen: int) =
   let newLen = len(s) + addLen
   if isLong(s):
@@ -262,3 +265,9 @@ iterator mitems*(a: var String): var char {.inline.} =
     yield a[i]
     inc(i)
     assert(len(a) == L, "the length of the string changed while iterating over it")
+
+template toOpenArray*(s: String; first, last: int): untyped =
+  toOpenArray(toCStr(addr s), first, last)
+
+template toOpenArray*(s: String): untyped =
+  toOpenArray(toCStr(addr s), 0, s.high)
