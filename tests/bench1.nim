@@ -1,5 +1,5 @@
-import std/[algorithm, times, stats, strformat]
-import ssostrings, strutils, parsesso
+import std/[algorithm, times, stats, strformat, strutils, parseutils]
+import ssostrings
 
 proc warmup() =
   # Warmup - make sure cpu is on max perf
@@ -42,11 +42,18 @@ proc myCmp[T](a, b: T): int {.inline.} =
   else:
     cmp(a, b)
 
+proc parseBin[T: SomeInteger](s: String, number: var T, start = 0,
+                              maxLen = 0): int {.noSideEffect, inline.} =
+  parseBin(s.toOpenArray(start, s.high), number, maxLen)
+
+func parseBinInt(s: String): int =
+  result = 0
+  let L = parseBin(s, result, 0)
+  if L != s.len or L == 0:
+    raise newException(ValueError, "invalid binary integer")
+
 proc myParseBinInt[T](s: T): int {.inline.} =
-  when T is string:
-    strutils.parseBinInt(s)
-  else:
-    parsesso.parseBinInt(s)
+  parseBinInt(s)
 
 proc test[T] =
   const data = "0100111001101001111011010100111001101001"
