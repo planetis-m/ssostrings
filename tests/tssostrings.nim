@@ -1,4 +1,4 @@
-import ssostrings, std/enumerate, std/parseutils
+import ssostrings, std/[enumerate, parseutils, assertions]
 
 proc parseHex[T: SomeInteger](s: String, number: var T, start = 0,
                               maxLen = 0): int {.noSideEffect, inline.} =

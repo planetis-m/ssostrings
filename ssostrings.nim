@@ -1,3 +1,6 @@
+when defined(nimPreviewSlimSystem):
+  import std/assertions
+
 when cpuEndian == littleEndian:
   const
     strLongFlag = 1
