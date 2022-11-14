@@ -163,7 +163,7 @@ proc toStr*(str: string): String {.inline.} =
   cstrToStr(str.cstring, str.len)
 
 proc toCStr*(s: ptr String): cstring {.inline.} =
-  result = cstring(s[].data)
+  result = cast[cstring](s[].data)
 
 template toCStr*(s: String): cstring = toCStr(addr s)
 
