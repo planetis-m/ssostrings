@@ -1,6 +1,6 @@
 # Package
 
-version     = "0.6.1"
+version     = "0.7.0"
 author      = "Antonis Geralis"
 description = "Small String Optimized string type"
 license     = "MIT"
