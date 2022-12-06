@@ -7,7 +7,7 @@ proc parseHex[T: SomeInteger](s: String, number: var T, start = 0,
 proc main =
   block:
     let data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    var str: String = toStr""
+    var str = String()
     for c in data:
       str.add c
     let expected = toStr(data)
