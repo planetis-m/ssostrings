@@ -64,11 +64,7 @@ template setLongCap(s, n) =
 proc `=destroy`*(x: var String) =
   frees(x)
 
-proc `=copy`*(a: var String, b: String) =
-  if isLong(a):
-    if isLong(b) and a.p == b.p: return
-    `=destroy`(a)
-    wasMoved(a)
+template dups(a, b) =
   if isLong(b):
     when compileOption("threads"):
       a.p = cast[ptr UncheckedArray[char]](allocShared(contentSize(b.len)))
@@ -79,6 +75,16 @@ proc `=copy`*(a: var String, b: String) =
     copyMem(a.p, b.p, contentSize(a.len))
   else:
     copyMem(addr a, addr b, sizeof(String))
+
+proc `=dup`*(b: String): String =
+  dups(result, b)
+
+proc `=copy`*(a: var String, b: String) =
+  if isLong(a):
+    if isLong(b) and a.p == b.p: return
+    `=destroy`(a)
+    wasMoved(a)
+  dups(a, b)
 
 proc resize(old: int): int {.inline.} =
   if old <= 0: result = 4
