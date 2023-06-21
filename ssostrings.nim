@@ -61,7 +61,7 @@ template setLongCap(s, n) =
   else:
     s.cap = n or strLongFlag
 
-proc `=destroy`*(x: var String) =
+proc `=destroy`*(x: String) =
   frees(x)
 
 template dups(a, b) =
