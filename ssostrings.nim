@@ -64,9 +64,8 @@ template setLongCap(s, n) =
 proc `=destroy`*(x: String) =
   frees(x)
 
-# proc `=wasMoved`*(x: var String) =
-#   x.setShortLen(0)
-#   # if isLong(x): x.p = nil
+proc `=wasMoved`*(x: var String) =
+  x.cap = 0
 
 template dups(a, b) =
   if isLong(b):
