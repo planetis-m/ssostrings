@@ -64,6 +64,10 @@ template setLongCap(s, n) =
 proc `=destroy`*(x: String) =
   frees(x)
 
+# proc `=wasMoved`*(x: var String) =
+#   x.setShortLen(0)
+#   # if isLong(x): x.p = nil
+
 template dups(a, b) =
   if isLong(b):
     when compileOption("threads"):
@@ -83,7 +87,7 @@ proc `=copy`*(a: var String, b: String) =
   if isLong(a):
     if isLong(b) and a.p == b.p: return
     `=destroy`(a)
-    wasMoved(a)
+    `=wasMoved`(a)
   dups(a, b)
 
 proc resize(old: int): int {.inline.} =
