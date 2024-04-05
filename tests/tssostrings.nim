@@ -29,9 +29,12 @@ proc main =
       assert str.toCStr == expected.cstring
       assert str.len == strLen
   block:
-    var str = toStr(cstring"7B")
+    let str = toStr(cstring"7B")
     var num = 0
     assert parseHex(str, num) == 2
     assert num == 123
+  block:
+    let str = toStr(cstring"7B")
+    assert str.toNimStr == "7B"
 
 main()

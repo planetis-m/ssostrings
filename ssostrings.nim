@@ -176,6 +176,10 @@ proc toCStr*(s: ptr String): cstring {.inline.} =
 
 template toCStr*(s: String): cstring = toCStr(addr s)
 
+proc toNimStr*(s: String): string =
+  result = newString(len(s))
+  copyMem(cstring(result), toCStr(s), result.len)
+
 proc initStringOfCap*(space: Natural): String =
   # this is also 'system.newStringOfCap'.
   if space <= 0:
