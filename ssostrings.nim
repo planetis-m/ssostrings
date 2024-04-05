@@ -262,6 +262,18 @@ proc `[]=`*(x: var String; i: int; val: char) {.inline.} =
   checkBounds(i, len(x))
   x.data[i] = val
 
+proc `[]`*(x: String; i: BackwardsIndex): char {.inline.} =
+  checkBounds(len(x) - i.int, len(x))
+  x.data[len(x) - i.int]
+
+proc `[]`*(x: var String; i: BackwardsIndex): var char {.inline.} =
+  checkBounds(len(x) - i.int, len(x))
+  x.data[len(x) - i.int]
+
+proc `[]=`*(x: var String; i: BackwardsIndex; val: char) {.inline.} =
+  checkBounds(len(x) - i.int, len(x))
+  x.data[len(x) - i.int] = val
+
 iterator items*(a: String): char {.inline.} =
   var i = 0
   let L = len(a)
