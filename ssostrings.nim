@@ -1,3 +1,5 @@
+import std/hashes
+
 when defined(nimPreviewSlimSystem):
   import std/assertions
 
@@ -299,3 +301,6 @@ template toOpenArray*(s: String; first, last: int): untyped =
 
 template toOpenArray*(s: String): untyped =
   toOpenArray(toCStr(addr s), 0, s.high)
+
+proc hash*(x: String): Hash =
+  hash(toOpenArray(x))
