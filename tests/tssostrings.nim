@@ -36,5 +36,7 @@ proc main =
   block:
     let str = toStr(cstring"7B")
     assert str.toNimStr == "7B"
+    assert str.toOpenArray() == "7B"
+    assert str.toOpenArray(0, 1) == "7B"
 
 main()
