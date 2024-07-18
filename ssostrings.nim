@@ -179,7 +179,7 @@ proc toCStr*(s: ptr String): cstring {.inline.} =
 template toCStr*(s: String): cstring = toCStr(addr s)
 
 proc toNimStr*(s: String): string =
-  result = newString(len(s))
+  result = newStringUninit(len(s))
   copyMem(cstring(result), toCStr(s), result.len)
 
 proc initStringOfCap*(space: Natural): String =
