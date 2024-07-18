@@ -226,15 +226,13 @@ proc setLen*(s: var String, newLen: Natural) =
     s.setShortLen newLen
 
 # Comparisons
-proc eqStrings*(a, b: String): bool =
+proc `==`*(a, b: String): bool =
   let aLen = len(a)
   if aLen != len(b):
     result = false
   else: result = equalMem(a.data, b.data, aLen)
 
-proc `==`*(a, b: String): bool {.inline.} = eqStrings(a, b)
-
-proc cmpStrings*(a, b: String): int =
+proc cmp*(a, b: String): int =
   let aLen = len(a)
   let bLen = len(b)
   result = cmpMem(a.data, b.data, min(aLen, bLen))
@@ -244,8 +242,8 @@ proc cmpStrings*(a, b: String): int =
     elif aLen > bLen:
       result = 1
 
-proc `<=`*(a, b: String): bool {.inline.} = cmpStrings(a, b) <= 0
-proc `<`*(a, b: String): bool {.inline.} = cmpStrings(a, b) < 0
+proc `<=`*(a, b: String): bool {.inline.} = cmp(a, b) <= 0
+proc `<`*(a, b: String): bool {.inline.} = cmp(a, b) < 0
 
 proc raiseIndexDefect(i, n: int) {.noinline, noreturn.} =
   raise newException(IndexDefect, "index " & $i & " not in 0 .. " & $n)

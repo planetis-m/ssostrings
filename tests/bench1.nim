@@ -36,7 +36,7 @@ converter toArray(str: string): array[24, char] = copyMem(addr result, addr str[
 
 proc myCmp[T](a, b: T): int {.inline.} =
   when T is ssostrings.String:
-    ssostrings.cmpStrings(a, b)
+    ssostrings.cmp(a, b)
   elif T is array:
     cmpMem(addr a, addr b, sizeof(T))
   else:
@@ -71,9 +71,9 @@ proc test[T] =
       strings.add(testString)
 
     var count = 0
-    #bench("Copy " & $T, reps):
-      #var copy = strings[0]
-      #inc count, copy.len
+    bench("Copy " & $T, reps):
+      var copy = strings[0]
+      inc count, copy.len
 
     #count = 0
     #bench("Move " & $T, reps):
@@ -81,31 +81,31 @@ proc test[T] =
       #inc count, move.len
       #strings[0] = move(move)
 
-    #count = 0
-    #bench("Equal " & $T, reps):
-      #for i in 1..<strings.len:
-        #inc count, int(strings[0] == strings[i])
+    count = 0
+    bench("Equal " & $T, reps):
+      for i in 1..<strings.len:
+        inc count, int(strings[0] == strings[i])
 
     count = 0
     bench("Compare " & $T, reps):
       for i in 1..<strings.len:
         inc count, myCmp(strings[0], strings[i])
 
-    count = 0
-    bench("ParseBin " & $T, reps):
-      for i in 0..strings.high:
-        inc count, myParseBinInt(strings[i])
+    # count = 0
+    # bench("ParseBin " & $T, reps):
+    #   for i in 0..strings.high:
+    #     inc count, myParseBinInt(strings[i])
 
-    #when T isnot array:
-      #bench("Append " & $T, reps):
-        #for i in 0..strings.high-1:
-          #strings[i].add data[i mod data.len]
+    # when T isnot array:
+    #   bench("Append " & $T, reps):
+    #     for i in 0..strings.high-1:
+    #       strings[i].add data[i mod data.len]
 
     #bench("Sort " & $T, reps):
       #sort(strings, myCmp)
 
 proc main =
-  #warmup()
+  warmup()
   test[string]()
   #test[array[24, char]]()
   test[ssostrings.String]()
