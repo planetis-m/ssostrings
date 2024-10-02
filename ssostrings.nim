@@ -295,7 +295,7 @@ iterator mitems*(a: var String): var char {.inline.} =
     assert(len(a) == L, "the length of the string changed while iterating over it")
 
 template toOpenArray*(s: String; first, last: int): untyped =
-  checkBounds(first, len(s))
+  rangeCheck(first <= last)
   checkBounds(last, len(s))
   toOpenArray(toCStr(addr s), first, last)
 
