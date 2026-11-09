@@ -142,6 +142,38 @@ proc add*(dest: var String; src: String) {.inline.} =
   let srcLen = len(src)
   if srcLen > 0:
     let destLen = len(dest)
+    if isLong(dest) and isLong(src) and dest.p == src.p:
+      # self-append: dest and src share one heap buffer (e.g. s.add(s),
+      # where the argument may reach this proc without an intervening copy).
+      # Growing the buffer first would invalidate the shared source before
+      # its bytes are copied, so copy the content into a fresh buffer here.
+      let newLen = destLen + srcLen
+      let oldCap = dest.longCap
+      if newLen > oldCap:
+        let newCap = max(newLen, resize(oldCap))
+        when compileOption("threads"):
+          let p = cast[ptr UncheckedArray[char]](allocShared0(contentSize(newCap)))
+        else:
+          let p = cast[ptr UncheckedArray[char]](alloc0(contentSize(newCap)))
+        copyMem(p, dest.p, contentSize(destLen))
+        copyMem(addr p[destLen], dest.p, srcLen+1)
+        when compileOption("threads"):
+          deallocShared(dest.p)
+        else:
+          dealloc(dest.p)
+        dest.p = p
+        dest.setLongCap newCap
+      else:
+        # in-place self-append: the regions overlap, so copy the terminator
+        # out first and then the content in descending order
+        let term = dest.data[srcLen]
+        var i = srcLen - 1
+        while i >= 0:
+          dest.data[destLen + i] = dest.data[i]
+          dec i
+        dest.data[destLen + srcLen] = term
+      inc dest.len, srcLen
+      return
     prepareAdd(dest, srcLen)
     # also copy the \0 terminator:
     copyMem(addr dest.data[destLen], src.data, srcLen+1)
